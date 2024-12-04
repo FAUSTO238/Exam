@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Courier Management System</title>
+  <style>
+    /* General Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #4CAF50;
+      margin-bottom: 20px;
+    }
+
+    form, .package-list {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    button {
+      background: #4CAF50;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    .error, .success {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .error {
+      background: #ffcccc;
+      color: #cc0000;
+    }
+
+    .success {
+      background: #ccffcc;
+      color: #006600;
+    }
+
+    /* Table Styles */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #4CAF50;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    td {
+      background-color: #f9f9f9;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      table {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Courier Management System</h1>
+
+  <form id="packageForm">
+    <label for="recipientName">Recipient Name:</label>
+    <input type="text" id="recipientName" placeholder="Enter recipient's name">
+
+    <label for="packageId">Package ID:</label>
+    <input type="text" id="packageId" placeholder="Enter numeric package ID">
+
+    <label for="deliveryAddress">Delivery Address:</label>
+    <input type="text" id="deliveryAddress" placeholder="Enter delivery address">
+
+    <label for="weight">Weight (kg):</label>
+    <input type="text" id="weight" placeholder="Enter package weight (kg)">
+
+    <button type="button" id="addPackageButton">Add Package</button>
+    <p class="error" id="errorMessage" style="display: none;"></p>
+    <p class="success" id="successMessage" style="display: none;"></p>
+  </form>
+
+  <div class="package-list">
+    <h2>Package List</h2>
+    <button id="sortPackagesButton">Sort Packages by Weight</button>
+    <table>
+      <thead>
+        <tr>
+          <th>Recipient Name</th>
+          <th>Package ID</th>
+          <th>Delivery Address</th>
+          <th>Weight (kg)</th>
+          <th>Tracking Code</th>
+        </tr>
+      </thead>
+      <tbody id="packageTable"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const packages = [];
+    const errorMessage = document.getElementById('errorMessage');
+    const successMessage = document.getElementById('successMessage');
+    const packageTable = document.getElementById('packageTable');
+
+    function validateInput(recipientName, packageId, deliveryAddress, weight) {
+      if (!/^[a-zA-Z\s]+$/.test(recipientName)) {
+        throw new Error('Invalid Recipient Name. Only alphabetic characters are allowed.');
+      }
+      if (!/^\d+$/.test(packageId)) {
+        throw new Error('Invalid Package ID. Please enter numeric values only.');
+      }
+      if (!deliveryAddress.trim() || /\d/.test(deliveryAddress)) {
+        throw new Error('Invalid Delivery Address. It must be non-empty and cannot contain numbers.');
+      }
+      if (!/^\d+(\.\d+)?$/.test(weight) || parseFloat(weight) <= 0) {
+        throw new Error('Invalid Weight. Please enter a positive numeric value.');
+      }
+    }
+
+    function generateTrackingCode(packageId, weight) {
+      return (parseInt(packageId) << 4 | parseInt(weight)).toString(2);
+    }
+
+    function addPackageToTable(package) {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${package.recipientName}</td>
+        <td>${package.packageId}</td>
+        <td>${package.deliveryAddress}</td>
+        <td>${package.weight}</td>
+        <td>${package.trackingCode}</td>
+      `;
+      packageTable.appendChild(row);
+    }
+
+    document.getElementById('addPackageButton').addEventListener('click', () => {
+      errorMessage.style.display = 'none';
+      successMessage.style.display = 'none';
+      const recipientName = document.getElementById('recipientName').value.trim();
+      const packageId = document.getElementById('packageId').value.trim();
+      const deliveryAddress = document.getElementById('deliveryAddress').value.trim();
+      const weight = document.getElementById('weight').value.trim();
+
+      try {
+        validateInput(recipientName, packageId, deliveryAddress, weight);
+        const trackingCode = generateTrackingCode(packageId, weight);
+        const newPackage = { recipientName, packageId, deliveryAddress, weight, trackingCode };
+        packages.push(newPackage);
+        addPackageToTable(newPackage);
+        successMessage.textContent = 'Package added successfully!';
+        successMessage.style.display = 'block';
+      } catch (err) {
+        errorMessage.textContent = err.message;
+        errorMessage.style.display = 'block';
+      }
+    });
+
+    document.getElementById('sortPackagesButton').addEventListener('click', () => {
+      packageTable.innerHTML = '';
+      packages.sort((a, b) => parseFloat(a.weight) - parseFloat(b.weight));
+      packages.forEach(addPackageToTable);
+    });
+  </script>
+</body>
+</html>
